@@ -104,12 +104,25 @@ app.get("/secrets", function (req, res) {
 
     //check if the request is comming from an authenticated user or not
     if (req.isAuthenticated()) {
-        res.render("secrets");
+
+        User.find({"secret":{$ne:null}}, function(err, foundUsers){
+            if(foundUsers){
+                res.render("secrets",{usersWithSecretsEjs:foundUsers});
+            }
+        });
     } else {
         res.redirect("login");
     }
+
 });
 
+app.get("/submit", function(req, res){
+    if (req.isAuthenticated()) {
+        res.render("submit")
+    } else {
+        res.redirect("login");
+    }
+})
 
 app.get("/logout", function(req,res, next){
     //end a user session
@@ -157,9 +170,32 @@ app.post("/login", function (req, res) {
 
 });
 
-
+app.post("/submit",function(req,res){
+    const submittedSecret = req.body.secret;
+    const user = req.user;
+    const user_id = req.user._id;
+    
+    User.find({id:user_id}, function(err, foundUser){
+        if(err){
+            res.send(err)
+        } else {
+            if(foundUser){
+                User.updateOne({_id:user_id},{secret:submittedSecret},  function(err){
+                    if(err){
+                        console.log(err);
+                    }else{
+                        res.redirect("/secrets")
+                        console.log("updated succsess");
+                    }
+                })
+            }
+        }
+    });
+})
 
 app.listen(process.env.PORT || 3000, function () {
     console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);
 });
+
+
 
